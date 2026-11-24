@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>算法领地争夺战 · Algorithm Territory War</title>
+  <meta name="description" content="把 BFS、DFS、Dijkstra、A*、泛洪填充等经典算法放进同一张迷宫，看它们实时抢地盘、按占领面积排名。">
+  <meta name="theme-color" content="#060a12">
+  <meta property="og:title" content="算法领地争夺战 · Algorithm Territory War">
+  <meta property="og:description" content="多种经典算法同图竞技，实时圈地，按领地面积排名。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="docs/screenshot.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23060a12'/%3E%3Crect x='8' y='8' width='22' height='22' rx='6' fill='%2338bdf8'/%3E%3Crect x='34' y='8' width='22' height='22' rx='6' fill='%23f472b6'/%3E%3Crect x='8' y='34' width='22' height='22' rx='6' fill='%23fbbf24'/%3E%3Crect x='34' y='34' width='22' height='22' rx='6' fill='%2334d399'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 40 40">
+            <rect x="2" y="2" width="17" height="17" rx="4.5" fill="#38bdf8"></rect>
+            <rect x="21" y="2" width="17" height="17" rx="4.5" fill="#f472b6"></rect>
+            <rect x="2" y="21" width="17" height="17" rx="4.5" fill="#fbbf24"></rect>
+            <rect x="21" y="21" width="17" height="17" rx="4.5" fill="#34d399"></rect>
+            <path d="M20 2v36M2 20h36" stroke="#060a12" stroke-width="2"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>算法领地争夺战</h1>
+          <p>ALGORITHM TERRITORY WAR</p>
+        </div>
+      </div>
+      <div class="top-meta">
+        <div class="live-pill"><i></i><span>LIVE</span></div>
+        <div class="meta-chip"><span>地图</span><b id="metaSize">31 × 31</b></div>
+        <div class="meta-chip"><span>种子</span><b id="metaSeed">20261124</b></div>
+        <div class="meta-chip"><span>选手</span><b id="metaAgents">4</b></div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="stage-card">
+        <div class="stage-head">
+          <div>
+            <span class="eyebrow">ARENA / 领地演算</span>
+            <h2 id="stageTitle">四方割据，寸土必争</h2>
+          </div>
+          <div class="stage-actions">
+            <button id="btnPause" class="btn ghost" type="button" title="空格键暂停 / 继续">
+              <span class="btn-icon" id="pauseIcon">Ⅱ</span><span id="pauseText">暂停</span>
+            </button>
+            <button id="btnRestart" class="btn ghost" type="button" title="R 键重开同一张图">重开</button>
+            <button id="btnNew" class="btn primary" type="button" title="N 键生成新地图">新地图</button>
+          </div>
+        </div>
+
+        <div class="canvas-shell" id="canvasShell">
+          <canvas id="arena" aria-label="算法领地战况画布"></canvas>
+          <div class="canvas-hud top">
+            <div class="hud-pill"><i class="status-dot"></i><span id="hudStatus">争夺中</span></div>
+            <div class="hud-pill mono"><span id="hudPercent">0.0%</span><span class="muted">已占领</span></div>
+          </div>
+          <div class="canvas-hud bottom">
+            <div class="hud-caption">同一张迷宫 · 同一个起跑线 · 不同的扩张策略</div>
+            <div class="hud-pill mono" id="hudTick">T+000</div>
+          </div>
+          <div class="cell-tip" id="cellTip" hidden></div>
+        </div>
+
+        <div class="timeline">
+          <span class="timeline-label">轮次 <b id="tickLabel">0</b></span>
+          <div class="timeline-track"><i id="progressBar"></i></div>
+          <span class="timeline-label right" id="speedLabel">2× 速度</span>
+        </div>
+
+        <div class="stage-foot">
+          <div class="legend">
+            <span><i class="legend-swatch wall"></i>墙</span>
+            <span><i class="legend-swatch mud"></i>泥地 ×2</span>
+            <span><i class="legend-swatch swamp"></i>沼泽 ×3</span>
+          </div>
+          <span class="hint">空格 暂停 · R 重开 · N 新图 · 悬停查看格子</span>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <section class="champion-card" id="championCard">
+          <div class="champion-head">
+            <span class="eyebrow" id="champEyebrow">当前领跑</span>
+            <span class="crown" id="champCrown">♛</span>
+          </div>
+          <div class="champion-main">
+            <span class="algo-dot big" id="champDot"></span>
+            <h2 id="champName">等待开局</h2>
+          </div>
+          <p class="champion-stat" id="champStat">—</p>
+          <div class="champion-bar"><i id="champBar"></i></div>
+          <div class="champion-foot">
+            <span id="champNote">实时领地第一</span>
+            <button class="link-btn" id="btnReport" type="button">查看战报 →</button>
+          </div>
+        </section>
+
+        <section class="panel-block board-block">
+          <div class="block-head">
+            <h3>领地榜</h3>
+            <span class="block-meta" id="boardMeta">实时演算</span>
+          </div>
+          <div class="board" id="board"></div>
+        </section>
+
+        <section class="panel-block controls-block">
+          <div class="block-head">
+            <h3>赛场设置</h3>
+            <span class="block-meta mono" id="seedReadout">#20261124</span>
+          </div>
+
+          <div class="control-row">
+            <div class="control-label"><span>地图尺寸</span><small>单元格</small></div>
+            <div class="seg" id="sizeSeg">
+              <button data-size="25" type="button">25</button>
+              <button data-size="31" type="button" class="on">31</button>
+              <button data-size="41" type="button">41</button>
+              <button data-size="51" type="button">51</button>
+            </div>
+          </div>
+
+          <div class="control-row stack">
+            <div class="control-label"><span>开阔度</span><small id="braidValue">45%</small></div>
+            <input id="braidRange" class="range" type="range" min="0" max="100" step="5" value="45">
+          </div>
+
+          <div class="control-row">
+            <div class="control-label"><span>演算速度</span><small>每帧推进</small></div>
+            <div class="seg" id="speedSeg">
+              <button data-speed="1" type="button">1×</button>
+              <button data-speed="2" type="button" class="on">2×</button>
+              <button data-speed="4" type="button">4×</button>
+              <button data-speed="8" type="button">8×</button>
+            </div>
+          </div>
+
+          <div class="seed-row">
+            <label for="seedInput">种子</label>
+            <input id="seedInput" type="text" inputmode="numeric" autocomplete="off" value="20261124" aria-label="地图种子">
+            <button id="btnDice" class="icon-btn" type="button" title="随机种子">⟳</button>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="block-head tight">
+            <h3>出场算法</h3>
+            <span class="block-meta" id="pickCount">4 / 8</span>
+          </div>
+          <div class="algo-grid" id="algoGrid"></div>
+          <p class="control-note">泛洪与双向策略每轮各推进 2 格；其余 1 格。点选 2–8 个算法。</p>
+          <button id="btnApply" class="btn primary wide apply-btn" type="button">应用阵容并重开</button>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="page-foot">
+      <span>ALGORITHM TERRITORY WAR · 让算法自己抢给你看</span>
+      <span class="mono">CANVAS / SEEDED / DETERMINISTIC</span>
+    </footer>
+  </div>
+
+  <div class="modal" id="reportModal" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+      <button class="modal-close" id="btnCloseReport" type="button" aria-label="关闭">×</button>
+      <span class="eyebrow">BATTLE REPORT</span>
+      <h2 id="reportTitle">本局战报</h2>
+      <p class="modal-sub" id="reportSub">—</p>
+      <div class="report-list" id="reportBody"></div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="btnCloseReport2" type="button">关闭</button>
+        <button class="btn primary" id="btnReportRestart" type="button">再战同图</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "algorithm-territory-war",
+  "version": "1.0.0",
+  "private": false,
+  "description": "把 BFS、DFS、Dijkstra、A*、泛洪填充等算法放进同一张迷宫，实时抢地盘并按占领面积排名。",
+  "keywords": [
+    "algorithms",
+    "maze",
+    "canvas",
+    "visualization",
+    "territory",
+    "bfs",
+    "dfs",
+    "dijkstra",
+    "astar"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "test": "node test/smoke.js",
+    "start": "python -m http.server 8000"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
